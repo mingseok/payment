@@ -4,6 +4,7 @@ import com.example.payment.payment.client.dto.TossPaymentCancelRequest;
 import com.example.payment.payment.client.dto.TossPaymentConfirmRequest;
 import com.example.payment.payment.client.dto.TossPaymentResponse;
 import com.example.payment.payment.config.TossPaymentsProperties;
+import com.example.payment.payment.exception.TossCallOutcome;
 import com.example.payment.payment.exception.TossPaymentException;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
@@ -47,6 +48,19 @@ public class TossPaymentsClient {
         return post("/v1/payments/" + paymentKey + "/cancel", request);
     }
 
+    public TossPaymentResponse getPayment(String paymentKey) {
+        try {
+            return restClient.get()
+                    .uri("/v1/payments/{paymentKey}", paymentKey)
+                    .retrieve()
+                    .body(TossPaymentResponse.class);
+        } catch (RestClientResponseException e) {
+            throw handleError(e);
+        } catch (Exception e) {
+            throw new TossPaymentException("UNKNOWN", "토스 결제 조회 중 오류가 발생했습니다.");
+        }
+    }
+
     private TossPaymentResponse post(String uri, Object request) {
         try {
             return restClient.post()
@@ -62,8 +76,12 @@ public class TossPaymentsClient {
     }
 
     private TossPaymentException handleError(RestClientResponseException e) {
+        TossCallOutcome outcome = e.getStatusCode().is4xxClientError()
+                ? TossCallOutcome.REJECTED
+                : TossCallOutcome.UNKNOWN;
         return new TossPaymentException(
                 e.getStatusCode().toString(),
-                "토스 API 호출 실패: " + e.getStatusText());
+                "토스 API 호출 실패: " + e.getStatusText(),
+                outcome);
     }
 }

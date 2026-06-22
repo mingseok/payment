@@ -10,6 +10,7 @@ import com.example.payment.payment.client.dto.TossPaymentCancelRequest;
 import com.example.payment.payment.client.dto.TossPaymentConfirmRequest;
 import com.example.payment.payment.client.dto.TossPaymentResponse;
 import com.example.payment.payment.entity.Payment;
+import com.example.payment.payment.exception.TossPaymentException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,10 +46,26 @@ public class OrderPaymentService {
         try {
             return tossPaymentsClient.confirmPayment(
                     new TossPaymentConfirmRequest(paymentKey, orderId, amount));
-        } catch (Exception e) {
-            transactionService.failOrder(orderId);
-            throw new IllegalArgumentException("토스 결제 승인에 실패했습니다.");
+        } catch (TossPaymentException e) {
+            if (e.isRejected()) {
+                transactionService.failOrder(orderId);
+                throw new IllegalArgumentException("토스 결제가 거절되었습니다.");
+            }
+            return resolveUnknownOutcome(paymentKey, orderId);
         }
+    }
+
+    private TossPaymentResponse resolveUnknownOutcome(String paymentKey, String orderId) {
+        try {
+            TossPaymentResponse resolved = tossPaymentsClient.getPayment(paymentKey);
+            if ("DONE".equals(resolved.getStatus())) {
+                return resolved;
+            }
+        } catch (Exception e) {
+            log.error("승인 결과 조회 실패: paymentKey={}", paymentKey, e);
+        }
+        transactionService.failOrder(orderId);
+        throw new IllegalArgumentException("결제 승인 결과를 확인할 수 없습니다.");
     }
 
     private void verifyDone(TossPaymentResponse response, String orderId) {
