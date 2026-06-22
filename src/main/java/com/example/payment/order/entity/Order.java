@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -34,30 +33,26 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
-    @Column(nullable = false)
-    private LocalDateTime expiredAt;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
     @Builder
-    private Order(String orderId, Long memberId, int totalAmount, OrderStatus status,
-                  LocalDateTime expiredAt, LocalDateTime createdAt) {
+    private Order(String orderId, Long memberId, int totalAmount, OrderStatus status) {
         this.orderId = orderId;
         this.memberId = memberId;
         this.totalAmount = totalAmount;
         this.status = status;
-        this.expiredAt = expiredAt;
-        this.createdAt = createdAt;
+    }
+
+    public static Order create(Long memberId, int totalAmount) {
+        return Order.builder()
+                .orderId(UUID.randomUUID().toString())
+                .memberId(memberId)
+                .totalAmount(totalAmount)
+                .status(OrderStatus.PENDING)
+                .build();
     }
 
     public void cancel() {
         validatePending();
         this.status = OrderStatus.CANCELED;
-    }
-
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(this.expiredAt);
     }
 
     public boolean isPending() {
