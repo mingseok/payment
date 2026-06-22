@@ -19,3 +19,8 @@ logging:
     dateformat: "yyyy-MM-dd HH:mm:ss.SSS, Asia/Seoul"
   level:
     root: INFO
+
+toss:
+  payments:
+    secret-key: test1234
+    base-url: https://api.tosspayments.com
