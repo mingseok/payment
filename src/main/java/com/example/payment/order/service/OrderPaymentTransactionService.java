@@ -17,7 +17,7 @@ public class OrderPaymentTransactionService {
 
     @Transactional
     public Order markPaymentPending(String orderId, int requestAmount) {
-        Order order = orderRepository.findByOrderId(orderId)
+        Order order = orderRepository.findByOrderIdForUpdate(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
         order.startPayment(requestAmount);
         return order;
@@ -25,7 +25,7 @@ public class OrderPaymentTransactionService {
 
     @Transactional
     public Payment processPayment(PaymentCommand command) {
-        Order order = orderRepository.findByOrderId(command.getOrderId())
+        Order order = orderRepository.findByOrderIdForUpdate(command.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
 
         Payment payment = Payment.createDone(
@@ -39,6 +39,6 @@ public class OrderPaymentTransactionService {
 
     @Transactional
     public void failOrder(String orderId) {
-        orderRepository.findByOrderId(orderId).ifPresent(Order::tryFail);
+        orderRepository.findByOrderIdForUpdate(orderId).ifPresent(Order::tryFail);
     }
 }
