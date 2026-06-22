@@ -6,16 +6,19 @@ import com.example.payment.order.entity.Order;
 import com.example.payment.order.entity.OrderItem;
 import com.example.payment.order.repository.OrderItemRepository;
 import com.example.payment.payment.client.TossPaymentsClient;
+import com.example.payment.payment.client.dto.TossPaymentCancelRequest;
 import com.example.payment.payment.client.dto.TossPaymentConfirmRequest;
 import com.example.payment.payment.client.dto.TossPaymentResponse;
 import com.example.payment.payment.entity.Payment;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderPaymentService {
@@ -50,14 +53,14 @@ public class OrderPaymentService {
 
     private void verifyDone(TossPaymentResponse response, String orderId) {
         if (!"DONE".equals(response.getStatus())) {
-            transactionService.failOrder(orderId);
+            compensate(response.getPaymentKey(), orderId);
             throw new IllegalArgumentException("결제가 완료되지 않았습니다.");
         }
     }
 
     private void verifyAmount(TossPaymentResponse response, int expectedAmount, String orderId) {
         if (response.getTotalAmount() != expectedAmount) {
-            transactionService.failOrder(orderId);
+            compensate(response.getPaymentKey(), orderId);
             throw new IllegalArgumentException("결제 금액이 주문 금액과 일치하지 않습니다.");
         }
     }
@@ -74,8 +77,22 @@ public class OrderPaymentService {
                     .build();
             return transactionService.processPayment(command);
         } catch (Exception e) {
-            transactionService.failOrder(order.getOrderId());
+            compensate(tossResponse.getPaymentKey(), order.getOrderId());
             throw new IllegalArgumentException("결제 저장에 실패했습니다.");
+        }
+    }
+
+    private void compensate(String paymentKey, String orderId) {
+        cancelTossPayment(paymentKey);
+        transactionService.failOrder(orderId);
+    }
+
+    private void cancelTossPayment(String paymentKey) {
+        try {
+            tossPaymentsClient.cancelPayment(paymentKey,
+                    new TossPaymentCancelRequest("결제 처리 실패로 인한 취소"));
+        } catch (Exception e) {
+            log.error("보상 취소 실패: paymentKey={}", paymentKey, e);
         }
     }
 
