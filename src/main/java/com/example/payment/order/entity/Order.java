@@ -55,6 +55,29 @@ public class Order {
         this.status = OrderStatus.CANCELED;
     }
 
+    public void startPayment(int requestAmount) {
+        if (this.status == OrderStatus.PAYMENT_PENDING) {
+            throw new IllegalArgumentException("이미 결제가 진행 중인 주문입니다.");
+        }
+        validatePayable(requestAmount);
+        this.status = OrderStatus.PAYMENT_PENDING;
+    }
+
+    public void pay() {
+        if (this.status != OrderStatus.PAYMENT_PENDING) {
+            throw new IllegalArgumentException("결제 선점 상태가 아닙니다.");
+        }
+        this.status = OrderStatus.PAID;
+    }
+
+    public boolean tryFail() {
+        if (this.status != OrderStatus.PENDING && this.status != OrderStatus.PAYMENT_PENDING) {
+            return false;
+        }
+        this.status = OrderStatus.FAILED;
+        return true;
+    }
+
     public boolean isPending() {
         return this.status == OrderStatus.PENDING;
     }
@@ -66,6 +89,15 @@ public class Order {
     private void validatePending() {
         if (this.status != OrderStatus.PENDING) {
             throw new IllegalArgumentException("취소할 수 없는 주문 상태입니다.");
+        }
+    }
+
+    private void validatePayable(int requestAmount) {
+        if (this.status != OrderStatus.PENDING) {
+            throw new IllegalArgumentException("결제할 수 없는 주문 상태입니다.");
+        }
+        if (this.totalAmount != requestAmount) {
+            throw new IllegalArgumentException("결제 금액이 주문 금액과 일치하지 않습니다.");
         }
     }
 }
