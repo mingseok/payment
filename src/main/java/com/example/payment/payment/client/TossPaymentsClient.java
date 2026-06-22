@@ -1,5 +1,6 @@
 package com.example.payment.payment.client;
 
+import com.example.payment.payment.client.dto.TossPaymentCancelRequest;
 import com.example.payment.payment.client.dto.TossPaymentConfirmRequest;
 import com.example.payment.payment.client.dto.TossPaymentResponse;
 import com.example.payment.payment.config.TossPaymentsProperties;
@@ -40,6 +41,10 @@ public class TossPaymentsClient {
 
     public TossPaymentResponse confirmPayment(TossPaymentConfirmRequest request) {
         return post("/v1/payments/confirm", request);
+    }
+
+    public TossPaymentResponse cancelPayment(String paymentKey, TossPaymentCancelRequest request) {
+        return post("/v1/payments/" + paymentKey + "/cancel", request);
     }
 
     private TossPaymentResponse post(String uri, Object request) {
