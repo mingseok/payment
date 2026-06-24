@@ -6,9 +6,9 @@ import com.example.payment.order.entity.Order;
 import com.example.payment.order.entity.OrderItem;
 import com.example.payment.order.repository.OrderItemRepository;
 import com.example.payment.payment.client.TossPaymentsClient;
-import com.example.payment.payment.client.dto.TossPaymentCancelRequest;
-import com.example.payment.payment.client.dto.TossPaymentConfirmRequest;
-import com.example.payment.payment.client.dto.TossPaymentResponse;
+import com.example.payment.payment.client.dto.request.TossPaymentCancelRequest;
+import com.example.payment.payment.client.dto.request.TossPaymentConfirmRequest;
+import com.example.payment.payment.client.dto.response.TossPaymentResponse;
 import com.example.payment.payment.entity.Payment;
 import com.example.payment.payment.exception.TossPaymentException;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +44,8 @@ public class OrderPaymentService {
 
     private TossPaymentResponse callTossConfirm(String paymentKey, String orderId, int amount) {
         try {
-            return tossPaymentsClient.confirmPayment(
-                    new TossPaymentConfirmRequest(paymentKey, orderId, amount));
+            TossPaymentConfirmRequest request = new TossPaymentConfirmRequest(paymentKey, orderId, amount);
+            return tossPaymentsClient.confirmPayment(request);
         } catch (TossPaymentException e) {
             if (e.isRejected()) {
                 transactionService.failOrder(orderId);
@@ -57,7 +57,7 @@ public class OrderPaymentService {
 
     private TossPaymentResponse resolveUnknownOutcome(String paymentKey, String orderId) {
         try {
-            TossPaymentResponse resolved = tossPaymentsClient.getPayment(paymentKey);
+            TossPaymentResponse resolved = tossPaymentsClient.getPaymentStatus(paymentKey);
             if ("DONE".equals(resolved.getStatus())) {
                 return resolved;
             }
@@ -68,6 +68,7 @@ public class OrderPaymentService {
         throw new IllegalArgumentException("결제 승인 결과를 확인할 수 없습니다.");
     }
 
+    // 무통장 결제는 응답이 즉시 DONE 아닐수도 있음
     private void verifyDone(TossPaymentResponse response, String orderId) {
         if (!"DONE".equals(response.getStatus())) {
             compensate(response.getPaymentKey(), orderId);
@@ -114,7 +115,7 @@ public class OrderPaymentService {
     }
 
     private String generateOrderName(List<OrderItem> orderItems) {
-        if (orderItems.isEmpty()) {
+        if (orderItems.isEmpty()) { // 장바구니가 비었으면
             return "주문";
         }
         String firstName = firstProductName(orderItems);
@@ -130,12 +131,13 @@ public class OrderPaymentService {
     }
 
     private String firstProductName(List<OrderItem> orderItems) {
-        return orderItems.get(0).getProductName();
+        return orderItems.getFirst().getProductName();
     }
 
     private LocalDateTime parsePaidAt(String approvedAt) {
-        return approvedAt != null
-                ? OffsetDateTime.parse(approvedAt).toLocalDateTime()
-                : LocalDateTime.now();
+        if (approvedAt == null) {
+            return LocalDateTime.now();
+        }
+        return OffsetDateTime.parse(approvedAt).toLocalDateTime();
     }
 }

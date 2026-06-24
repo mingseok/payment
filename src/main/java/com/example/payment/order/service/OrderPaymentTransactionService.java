@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class OrderPaymentTransactionService {
@@ -33,12 +35,13 @@ public class OrderPaymentTransactionService {
                 command.getOrderName(), command.getAmount(), command.getPaidAt());
         paymentRepository.save(payment);
 
-        order.pay();
+        order.completePayment();
         return payment;
     }
 
     @Transactional
     public void failOrder(String orderId) {
-        orderRepository.findByOrderIdForUpdate(orderId).ifPresent(Order::tryFail);
+        Optional<Order> orderOptional = orderRepository.findByOrderIdForUpdate(orderId);
+        orderOptional.ifPresent(Order::tryFail);
     }
 }

@@ -1,8 +1,9 @@
 package com.example.payment.payment.client;
 
-import com.example.payment.payment.client.dto.TossPaymentCancelRequest;
-import com.example.payment.payment.client.dto.TossPaymentConfirmRequest;
-import com.example.payment.payment.client.dto.TossPaymentResponse;
+import com.example.payment.payment.client.dto.request.TossPaymentCancelRequest;
+import com.example.payment.payment.client.dto.request.TossPaymentConfirmRequest;
+import com.example.payment.payment.client.dto.request.TossPaymentRequest;
+import com.example.payment.payment.client.dto.response.TossPaymentResponse;
 import com.example.payment.payment.config.TossPaymentsProperties;
 import com.example.payment.payment.exception.TossCallOutcome;
 import com.example.payment.payment.exception.TossPaymentException;
@@ -48,7 +49,7 @@ public class TossPaymentsClient {
         return post("/v1/payments/" + paymentKey + "/cancel", request);
     }
 
-    public TossPaymentResponse getPayment(String paymentKey) {
+    public TossPaymentResponse getPaymentStatus(String paymentKey) {
         try {
             return restClient.get()
                     .uri("/v1/payments/{paymentKey}", paymentKey)
@@ -61,7 +62,7 @@ public class TossPaymentsClient {
         }
     }
 
-    private TossPaymentResponse post(String uri, Object request) {
+    private TossPaymentResponse post(String uri, TossPaymentRequest request) {
         try {
             return restClient.post()
                     .uri(uri)

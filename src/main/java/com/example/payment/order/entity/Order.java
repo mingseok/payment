@@ -63,19 +63,18 @@ public class Order {
         this.status = OrderStatus.PAYMENT_PENDING;
     }
 
-    public void pay() {
+    public void completePayment() {
         if (this.status != OrderStatus.PAYMENT_PENDING) {
             throw new IllegalArgumentException("결제 선점 상태가 아닙니다.");
         }
         this.status = OrderStatus.PAID;
     }
 
-    public boolean tryFail() {
+    public void tryFail() {
         if (this.status != OrderStatus.PENDING && this.status != OrderStatus.PAYMENT_PENDING) {
-            return false;
+            return;
         }
         this.status = OrderStatus.FAILED;
-        return true;
     }
 
     public boolean isPending() {
