@@ -4,6 +4,8 @@
 
 구체적인 설계 방향은 Issues에 정리되어 있습니다. (링크 통해 설계 내용 확인)
 
+> [단건 결제 정리](https://github.com/mingseok/payment/issues/15)
+
 <br/>
 
 
